@@ -11,242 +11,199 @@ import (
 )
 
 /*
-*	TODO KOMMENTARER
+ * 	PopulationHandler handles requests to the /population endpoint.
+ * 	It retrieves population data for a specific country and optionally filters it by year range.
+ *
+ * 	@param w - The http.ResponseWriter to write the response.
+ * 	@param r - The http.Request representing the incoming request.
  */
 func PopulationHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Extracts the countrycode. using URL.Path will not add the optional ?limit=xx
-	countryCode := strings.TrimPrefix(r.URL.Path, "/countryinfo/v1/population/")
+	// Extract the country code from the URL path.
+	countryCode := strings.TrimPrefix(r.URL.Path, utils.POPULATION_PATH)
 
-	// Checks if the country code is of len 2, if not a valid code, the API will throw error
+	// Validate the country code length.
 	if len(countryCode) != 2 {
-		http.Error(w, "Country code must be a 2-letter ISO code. The code you used is " + strconv.Itoa(len(countryCode)) + " long (\"" + countryCode + "\")", http.StatusBadRequest)
+		http.Error(w, "country code must be a 2-letter iso code. The code you used is " + strconv.Itoa(len(countryCode)) + " long (\"" + countryCode + "\")", http.StatusBadRequest)
 		return
 	}
 
-	// Fetch country name from the REST Countries API and checks for error
+	// Fetch country name  from the REST Countries API using the country code.
 	countryName, err := fetchCountryName(countryCode)
 	if err != nil {
-		log.Printf("Error fetching country name: %v\n", err)	// Log specific error
-		http.Error(w, "Failed to fetch country name", http.StatusInternalServerError)
+		log.Printf("error fetching country name: %v\n", err)	// Log specific error
+		http.Error(w, "failed to fetch country name", http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch population information from the Countries now API and checks for error
+	// Fetch population information from the Countries now API
 	populationInfo, err := fetchPopulation(countryName.Name.Common)
 	if err != nil {
-		log.Printf("Error fetching population data: %v\n", err)	// Log specific error
-		http.Error(w, "Failed to fetch population information", http.StatusInternalServerError)
+		log.Printf("error fetching population data: %v\n", err)	// Log specific error
+		http.Error(w, "failed to fetch population information", http.StatusInternalServerError)
 		return
 	}
 
-	// Optional query {?limit={:startyear-endyear}} and mean value
-	var limitStr = ""		// optional limit query as string
-	var startYear int		// start year of selection
-	var endYear int			// end year of selection
-	var meanValue int		// the calculated mean value
-
+	// start and end year of optional limit query
+	var startYear, endYear int		
 	// Decompose query parameters if present
 	if len(r.URL.RawQuery) != 0 {		// checks if optional query is present
-
+		
 		// checks if query is "limit" and has a valid value
-		limitStr = r.URL.Query().Get("limit")
+		limitStr := r.URL.Query().Get("limit")
 		if limitStr != "" {
-			var err error
+
 			years := strings.Split(limitStr, "-")
 			if len(years) != 2 {		// Checks if the user entered 2 year split by -
-				http.Error(w, "Invalid format for limit. use (?limit=integer-integer)", http.StatusBadRequest)
+				http.Error(w, "invalid format for limit. use (?limit=startYear-endYear)", http.StatusBadRequest)
 				return
 			}
 			// Ensures that startYear is a valid integer
+			var err error
 			startYear, err = strconv.Atoi(years[0])
 			if err != nil {
-				http.Error(w, "Invalid start year, Must be an integer. use (?limit=integer-integer)", http.StatusBadRequest)
+				http.Error(w, "invalid start year, must be an integer.", http.StatusBadRequest)
 				return
 			}
 
 			// Ensures that endYear is a valid integer
 			endYear, err = strconv.Atoi(years[1])
 			if err != nil {
-				http.Error(w, "Invalid end year, must be an integer. use (?limit=integer-integer)", http.StatusBadRequest)
+				http.Error(w, "invalid end year, must be an integer.", http.StatusBadRequest)
 				return
 			}
 
-			// Ensures that startYear is >= endYear
+			// Validate the year range
 			if startYear > endYear {
-				http.Error(w, "Endyear must be greater than or equal to startyear", http.StatusBadRequest)
-				return
-			}
-
-			// Apply the filtering of years chosen
-			// Helping struct to hold the values years and values requested
-			filteredPopulation := []struct {
-				Year  int `json:"year"`
-				Value int `json:"value"`
-			}{}
-
-			// Loops trough the results from CountriesNow and adds the years we are interested in
-			// To the helping struct
-			for _, entry := range populationInfo.Data.PopulationCount {
-				if entry.Year >= startYear && entry.Year <= endYear{
-					filteredPopulation = append(filteredPopulation, entry)
-				}
-			}
-			
-			// Checks if filter is within scope of the data provided by CountriesNow
-			if len(filteredPopulation) == 0 {
-				http.Error(w, "No population data within the span of years provided. First recorded year is " + 
-				strconv.Itoa(populationInfo.Data.PopulationCount[0].Year) , http.StatusBadRequest)
+				http.Error(w, "endyear must be greater than or equal to startyear", http.StatusBadRequest)
 				return
 			}
 			
-			// Iterates trough the filtered population data and calculates the mean (as int)
-			sum := 0
-			for _, year := range filteredPopulation {
-				sum += year.Value
-			}
-			meanValue = sum / len(filteredPopulation)
-			// Updates the data returned from CountriesNow with our filter
-			populationInfo.Data.PopulationCount = filteredPopulation
-
-
-		} else {	// If query is not "limit"
-			http.Error(w, "Invalid query. Use (?limit=integer-integer)", http.StatusBadRequest)
+		} else {	
+			http.Error(w, "invalid query. Use (?limit=integer-integer)", http.StatusBadRequest) // If query is not "limit"
 			return
 		}
 	}
 
+	// Filter population data by year range if applicable.
+	var filteredPopulation []struct {
+		Year  int `json:"year"`
+		Value int `json:"value"`
+	}
+	var meanValue int
+
+	if startYear != 0 || endYear != 0 {
+		// Loops trough the results from CountriesNow and adds the years we are interested in to the struct
+		for _, entry := range populationInfo.Data.PopulationCount {
+			if entry.Year >= startYear && entry.Year <= endYear {
+				filteredPopulation = append(filteredPopulation, entry)
+			}
+		}
+		
+		// Checks if filter is within scope of the data provided by CountriesNow API
+		if len(filteredPopulation) == 0 {
+			http.Error(w, "no population data within the span of years provided. first recorded year is " + 
+			strconv.Itoa(populationInfo.Data.PopulationCount[0].Year) , http.StatusBadRequest)
+			return
+		}
+		
+		// Iterates trough the filtered population data and calculates the mean value
+		sum := 0
+		for _, year := range filteredPopulation {
+			sum += year.Value
+		}
+		meanValue = sum / len(filteredPopulation)
+	} else {
+		// Use all population data if no filtering is applied
+		filteredPopulation = populationInfo.Data.PopulationCount
+	}
+
 	// Preapering the response
 	response := utils.PopulationResponse{
-		Mean: meanValue,
-		Values: populationInfo.Data.PopulationCount,
+		Mean:   meanValue,
+		Values: filteredPopulation,
 	}
 
 	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")
 
-	// Encode the response as JSON and send it
+	// Encode the response as JSON and send it. This also sets the status code to 200 if successful
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v\n", err)	// Log specific error
-		http.Error(w, "Failed to encode response.", http.StatusInternalServerError)
+		log.Printf("error encoding response: %v\n", err)	// Log specific error
+		http.Error(w, "failed to encode response.", http.StatusInternalServerError)
+		return
 	}
-
-	// Return status code
-	http.Error(w, "OK", http.StatusOK)
 }
 
 /*
-*	TODO KOMMENTARER (Flytt struct?)
-*/
-type CountryName struct {
-	 Name struct { Common string  `json:"common"`
-    } 							  `json:"name"`
-}
-
-/*
-*	Uses the REST country API to fetch the country name, using a country code
-*/
-func fetchCountryName (countryCode string) (CountryName, error){
+ * 	fetchCountryName retrieves the country name from the REST Countries API using a country code.
+ *
+ * 	@param countryCode - The 2-letter ISO country code.
+ * 	@return utils.CountryName - The full country name belonging to the country code
+ * 	@return error - An error if the request or decoding fails.
+ */
+func fetchCountryName (countryCode string) (utils.CountryName, error){
 	
 	// URL to invoke
-    url := "http://129.241.150.113:8080/v3.1/alpha/" + countryCode
+    url := utils.RESTCountriesURL + countryCode
 
-	// Creates new request
-	r, err := http.NewRequest(http.MethodGet, url, nil)
+	// Uses http.Get because we don't need custom headers, client or timeouts. The header content type is automatically set to JSON with http.Get
+	r, err := http.Get(url)
 	if err != nil {
-		return CountryName{}, fmt.Errorf("error in creating request: %v", err)
+		return utils.CountryName{}, fmt.Errorf("failed to fetch country name: %v", err)
+	}
+	defer r.Body.Close()
+
+	// Check the HTTP status code of the response
+	if r.StatusCode != http.StatusOK {
+		return utils.CountryName{}, fmt.Errorf("api returned non-200 status code: %d", r.StatusCode)
 	}
 
-	// Sets header
-	r.Header.Add("content-type", "application/json")
-
-	// Initiate the client
-	client := &http.Client{}
-	defer client.CloseIdleConnections()
-
-	// Issue request
-	res, err := client.Do(r)
-	if err != nil {
-		return CountryName{}, fmt.Errorf("error in response: %v", err)
-	}
-	defer res.Body.Close()
-
-	// Check the HTTP status code
-	if res.StatusCode != http.StatusOK {
-		return CountryName{}, fmt.Errorf("API returned non-200 status code: %d", res.StatusCode)
-	}
-
-	// REST returns an array of countries even tho we ask for only one, we therefore create an array here
-	var countryName []CountryName
+	// REST returns a list of countries even tho we ask for only one, we therefore create a list here
+	var countryName []utils.CountryName
 	// Decoding json response into a slice of CountryInfo
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&countryName); err != nil {
-		return CountryName{}, fmt.Errorf("error decoding JSON: %v", err)
+	if err := json.NewDecoder(r.Body).Decode(&countryName); err != nil {
+		return utils.CountryName{}, fmt.Errorf("failed to decode JSON response: %v", err)
 	}
 
-	return countryName[0], err
+	return countryName[0], nil
 }
 
 /*
-*	TODO KOMMENTARER
-*/
-type PopulationInfo struct {
-	Data struct { 
-		PopulationCount []struct{
-			Year int  	`json:"year"`
-			Value int 	`json:"value"`
-		}				`json:"populationCounts"`
-	}					`json:"data"`
-}
+ * 	fetchPopulation retrieves population data from the CountriesNow API using a country name.
+ *
+ * 	@param countryName - The name of the country.
+ * 	@return utils.PopulationInfo - The population data for the country.
+ * 	@return error - An error if the request or decoding fails.
+ */
+func fetchPopulation (countryName string) (utils.PopulationInfo, error){
 
-/*
-*	TODO KOMMENTARER
-*/
-func fetchPopulation (countryName string) (PopulationInfo, error){
 	// URL to invoke
-    url := "http://129.241.150.113:3500/api/v0.1/countries/population"
+    url := utils.CountriesNowURL + "population"
 
-	// Payload to use with POST request in countries now API
+	// Creates payload to use with POST request in countries now API and encodes into JSON
     payload := map[string]string{"country": countryName}
-
-	// Encodes the payload into JSON
     jsonPayload, err := json.Marshal(payload)
     if err != nil {
-        return PopulationInfo{}, err
+        return utils.PopulationInfo{}, fmt.Errorf("failed to encode payload: %v", err)
     }
 
-	// Creates new request
-	r, err := http.NewRequest(http.MethodPost, url, strings.NewReader(string(jsonPayload)))
+	r, err := http.Post(url, "application/json", strings.NewReader(string(jsonPayload)))
 	if err != nil {
-		return PopulationInfo{}, fmt.Errorf("error in creating request: %v", err)
+		return utils.PopulationInfo{}, fmt.Errorf("failed to fetch population data: %v", err)
 	}
-
-	// Sets header
-	r.Header.Add("content-type", "application/json")
-
-	// Initiate the client
-	client := &http.Client{}
-	defer client.CloseIdleConnections()
-
-	// Issue request
-	res, err := client.Do(r)
-	if err != nil {
-		return PopulationInfo{}, fmt.Errorf("error in response: %v", err)
-	}
-	defer res.Body.Close()
+	defer r.Body.Close()
 
 	// Check the HTTP status code
-	if res.StatusCode != http.StatusOK {
-		return PopulationInfo{}, fmt.Errorf("API returned non-200 status code: %d", res.StatusCode)
+	if r.StatusCode != http.StatusOK {
+		return utils.PopulationInfo{}, fmt.Errorf("api returned non-200 status code: %d", r.StatusCode)
 	}
 
 	// Decodes the JSON response into populationInfo
-	var populationInfo PopulationInfo
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&populationInfo); err != nil {
-		return PopulationInfo{}, fmt.Errorf("error decoding JSON: %v", err)
+	var populationInfo utils.PopulationInfo
+	if err := json.NewDecoder(r.Body).Decode(&populationInfo); err != nil {
+		return utils.PopulationInfo{}, fmt.Errorf("error decoding json: %v", err)
 	}
 
-	fmt.Println(populationInfo)
-	return populationInfo, err
+	return populationInfo, nil
 }

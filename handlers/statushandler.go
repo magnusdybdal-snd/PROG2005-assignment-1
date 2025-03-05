@@ -1,41 +1,33 @@
 package handlers
 
 import (
-	"assignment1/utils" // const.go, func.go, struct.go
+	"assignment1/utils"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 )
 
-// Time since service has started
+// startTime tracks when the service started, used to calculate uptime.
 var startTime = time.Now()
 
-// URL for APIs. the exact endpoint is not important
-var countriesNowURL = "http://129.241.150.113:3500/api/v0.1/countries/iso"
-var RESTCountriesURL = "http://129.241.150.113:8080/v3.1/alpha/no"
-
 /*
- * Handler for requests to the status entry point
+ * 	StatusHandler handles requests to the /status endpoint.
+ * 	It checks the status of external APIs (CountriesNow and REST Countries),
+ * 	calculates the service uptime, and returns a JSON response.
  *
- * Checks the status of the CountriesNow and REST Countries APIs
- * Calculates the uptime of the service and gives a JSON response.
- *
- * Parameters:
- *	- w: The http.ResponseWriter
- *	- r: The http.Request
- *
- * Returns:
- *	- None
+ * 	@param w - The http.ResponseWriter to write the response.
+ * 	@param r - The http.Request representing the incoming request.
  */
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Checks the status of the Countries Now API.
-	countriesNowStatus := utils.CheckAPIStatus(countriesNowURL)
+	countriesNowStatus := CheckAPIStatus(utils.CountriesNowURL + "iso")
 
 	// Checks the status of the REST countries API.
-	RESTCountriesStatus := utils.CheckAPIStatus(RESTCountriesURL)
+	RESTCountriesStatus := CheckAPIStatus(utils.RESTCountriesURL + "no")
 
-	// Calculates the uptime of the service
+	// Calculates the uptime of the service in seconds
 	uptime := time.Since(startTime).Seconds()
 
 	// Prepare the response
@@ -46,16 +38,40 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		Uptime:           uptime,
 	}
 
-	// Set the response header
+	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")
 
-	// Initiate and encode the response
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Error during encoding", http.StatusInternalServerError)
+	// Encode the response as JSON and send it. if successful will also add status 200 to header
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Log the error and return a 500 Internal Server Error.
+		log.Printf("failed to encode response: %v\n", err)
+		http.Error(w, "Failed to encode response.", http.StatusInternalServerError)
 		return
 	}
+}
 
-	// Return status code
-	http.Error(w, "OK", http.StatusOK)
+/*
+ * 	CheckAPIStatus sends a GET request to the specified URL and returns the HTTP status code.
+ * 	If the request fails, it returns http.StatusServiceUnavailable (503).
+ *
+ * 	@param url - The URL to send the GET request to.
+ * 	@return - The HTTP status code of the response.
+ */
+ func CheckAPIStatus(url string) int {
+	// Validate the URL
+	if url == "" {
+		return http.StatusServiceUnavailable
+	}
+
+	// Sending a GET request to the url
+	resp, err := http.Get(url)
+	// If request fails we return 503
+	if err != nil {
+		return http.StatusServiceUnavailable
+	}
+	// Ensures the response body is closed
+	defer resp.Body.Close()
+
+	// Return the status code
+	return resp.StatusCode
 }

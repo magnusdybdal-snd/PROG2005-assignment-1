@@ -116,7 +116,6 @@ Response:
         "Agskardet"
     ]
 }
-OK 
 ```
 
 2. **Get Population Data**:

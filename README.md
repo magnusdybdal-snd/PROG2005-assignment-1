@@ -1,8 +1,8 @@
 # Country Information Service
 
-This is a Go-based web service that provides information about countries, including population data, cities, languages, and more. It integrates with external APIs [REST Countries](http://129.241.150.113:8080/v3.1/)and [CountriesNow](http://129.241.150.113:3500/api/v0.1/) (self hosted) to fetch and serve data.
+This is a Go-based web service that provides information about countries, including population data, cities, languages, and more. It integrates with external APIs like [REST Countries](https://restcountries.com/) and [CountriesNow](https://countriesnow.space/) to fetch and serve data.
 
-The service is deployed on **Render** and can be accessed via the provided Render URL. The source code is hosted on **GitLab** and **GitHub** and is available for internal viewing.
+The service is deployed on **Render** and can be accessed via the provided Render URL. The source code is hosted on **GitLab** and is available for internal viewing by classmates.
 
 ---
 
@@ -20,9 +20,10 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 
 ## Features
 
-- **Country Information**: Retrieve detailed information about a country, including its name, continents, population, languages, borders, flag, capital and cities.
+- **Country Information**: Retrieve detailed information about a country, including its name, population, languages, borders, and more.
 - **Population Data**: Fetch population statistics for a country, optionally filtered by a year range.
 - **Service Status**: Check the status of the service and external APIs.
+- **Simple Interface**: Easy-to-use endpoints with clear responses in JSON format.
 
 ---
 
@@ -31,7 +32,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 ### 1. **Root Endpoint**
 - **Path**: `/`
 - **Method**: `GET`
-- **Description**: Provides a short message and links to other endpoints.
+- **Description**: Provides a welcome message and links to other endpoints.
 - **Response**: HTML page with links.
 
 ### 2. **Country Information**
@@ -64,7 +65,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 - Go 1.22.2 or higher
 - Git (optional, for cloning the repository)
 
-### Installation
+### Installation (locally instead of using the Render service)
 1. Clone the repository:
    ```bash
    git clone https://gitlab.com/your-username/your-repo-name.git
@@ -72,11 +73,11 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 
 2. Build the project:
     ```bash
-    go build
+   go build
 
 3. Run the service:
     ```bash
-    ./your-repo-name
+   ./your-repo-name
 
 ---
 
@@ -85,21 +86,94 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 ### Example Requests
 
 1. **Get Country Information**:
-   ```bash
+    ```bash
    curl http://localhost:8080/countryinfo/v1/info/no
 
-### Response
-
-    ```json
-    {
-    "name": "Norway",
-    "continents": ["Europe"],
-    "population": 5379475,
+Response:
+```json
+{
+    "name":"Norway",
+    "continents": [
+        "Europe"
+    ],
+    "population":5379475,
     "languages": {
-        "nor": "Norwegian"
-    },
-    "borders": ["FIN", "SWE", "RUS"],
-    "flag": "https://flagcdn.com/no.svg",
-    "capital": "Oslo",
-    "cities": ["Oslo", "Bergen", "Trondheim"]
-    }
+        "nno":"Norwegian Nynorsk",
+        "nob":"Norwegian Bokmål",
+        "smi":"Sami"
+    },"borders": [
+        "FIN",
+        "SWE",
+        "RUS"
+    ],
+    "flag":"https://flagcdn.com/w320/no.png",
+    "capital":"Oslo",
+    "cities": [
+        "Abelvaer",
+        "Adalsbruk",
+        "Adland",
+        "Agotnes",
+        "Agskardet"
+    ]
+}
+OK 
+```
+
+2. **Get Population Data**:
+    ```bash
+   curl http://localhost:8080/countryinfo/v1/population/no?limit=2000-2002
+
+Response:
+```(json)
+   {
+     "mean": 4514292,
+     "values": [
+       {
+           "year": 2000, 
+           "value": 4490967
+       },
+       {
+           "year": 2001, 
+           "value": 4513751
+       },
+       {
+           "year": 2002, 
+           "value": 4538159
+       },
+     ]
+   }
+```
+
+3. **Check Service Status**:
+    ```bash
+   curl http://localhost:8080/countryinfo/v1/status
+
+Response:
+    
+```json
+{
+    "countriesnowapi": 200,
+    "restcountriesapi": 200,
+    "version": "v1",
+    "uptime": 3852.541554949
+}
+```
+---
+
+## Deployment
+
+The service is deployed on **Render**. You can access it at the following URL:
+
+🔗 **[Render Service URL](https://your-render-service-url.onrender.com)**
+
+
+---
+
+## API Documentation
+
+For detailed API documentation, refer to the following:
+
+- **REST Countries API**: [https://documenter.getpostman.com/view/1134062/T1LJjU52](https://documenter.getpostman.com/view/1134062/T1LJjU52)
+- **CountriesNow API**: [http://129.241.150.113:8080/](http://129.241.150.113:8080/)
+
+---

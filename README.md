@@ -69,7 +69,9 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 1. Clone the repository:
    ```bash
    git clone https://git.gvk.idi.ntnu.no/course/prog2005/prog2005-2025-workspace/magnusdybdal/assignment-1.git
-   cd your-repo-name
+    ```
+   ```bash
+   cd assignment-1
 
 2. Build the project:
     ```bash
@@ -77,7 +79,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 
 3. Run the service:
     ```bash
-   ./assignment-1
+   ./assignment1
 
 ---
 

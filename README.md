@@ -167,5 +167,8 @@ The service is deployed on **Render**. You can access it at the following URL:
 
 🔗 **[Render Service URL](https://assignment-1-uszz.onrender.com/)**
 
+Note: As the service is deployed on the free plan of Render, the service uses about a minute to spin up
+if it is accessed after 15 minutes of downtime / no traffic, so be patient when you initially follow the url
+
 
 ---

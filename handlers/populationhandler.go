@@ -30,7 +30,7 @@ func PopulationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the country code length.
 	if len(countryCode) != 2 {
-		http.Error(w, "country code must be a 2-letter iso code. The code you used is " + strconv.Itoa(len(countryCode)) + " long (\"" + countryCode + "\")", http.StatusBadRequest)
+		http.Error(w, "Country code must be a 2-letter ISO code. for example try: " + utils.POPULATION_PATH + "no?limit=2000-2010", http.StatusBadRequest)
 		return
 	}
 

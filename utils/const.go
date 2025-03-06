@@ -4,13 +4,13 @@ package utils
 const DEFAULT_PATH = "/"
 
 // INFO_PATH is the endpoint for retrieving country information.
-const INFO_PATH = "/countryinfo/v1/info/"
+const INFO_PATH = "/countryinfo/" + VERSION + "/info/"
 
 // POPULATION_PATH is the endpoint for retrieving population data.
-const POPULATION_PATH = "/countryinfo/v1/population/"
+const POPULATION_PATH = "/countryinfo/" + VERSION + "/population/"
 
 // STATUS_PATH is the endpoint for retrieving service status.
-const STATUS_PATH = "/countryinfo/v1/status"
+const STATUS_PATH = "/countryinfo/" + VERSION + "/status"
 
 // VERSION represents the current version of the service.
 const VERSION = "v1"

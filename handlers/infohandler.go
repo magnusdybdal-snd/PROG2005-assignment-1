@@ -31,7 +31,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the country code length
 	if len(countryCode) != 2 {
-		http.Error(w, "Country code must be a 2-letter ISO code. The code you used is " + strconv.Itoa(len(countryCode)) + " long (\"" + countryCode + "\")", http.StatusBadRequest)
+		http.Error(w, "Country code must be a 2-letter ISO code. for example try: " + utils.INFO_PATH + "no?limit=10", http.StatusBadRequest)
 		return
 	}
 

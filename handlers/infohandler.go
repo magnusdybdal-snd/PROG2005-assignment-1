@@ -20,6 +20,12 @@ import (
  */
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
+	// Method only allows GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Extracts the countrycode. using URL.Path ignores queries when extracting
 	countryCode := strings.TrimPrefix(r.URL.Path, utils.INFO_PATH)
 

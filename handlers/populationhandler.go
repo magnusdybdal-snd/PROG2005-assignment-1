@@ -19,6 +19,12 @@ import (
  */
 func PopulationHandler(w http.ResponseWriter, r *http.Request) {
 
+	// Endpoint only allows GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Extract the country code from the URL path.
 	countryCode := strings.TrimPrefix(r.URL.Path, utils.POPULATION_PATH)
 

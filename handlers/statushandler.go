@@ -21,6 +21,12 @@ var startTime = time.Now()
  */
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 
+	// Method only allows GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Checks the status of the Countries Now API.
 	countriesNowStatus := CheckAPIStatus(utils.CountriesNowURL + "iso")
 

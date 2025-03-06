@@ -87,7 +87,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 
 1. **Get Country Information**:
     ```bash
-   curl http://localhost:8080/countryinfo/v1/info/no
+   curl http://localhost:8080/countryinfo/v1/info/no?limit=5
 
 Response:
 ```json

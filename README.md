@@ -68,7 +68,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 ### Installation (locally instead of using the Render service)
 1. Clone the repository:
    ```bash
-   git clone https://gitlab.com/your-username/your-repo-name.git
+   git clone https://git.gvk.idi.ntnu.no/course/prog2005/prog2005-2025-workspace/magnusdybdal/assignment-1.git
    cd your-repo-name
 
 2. Build the project:
@@ -77,7 +77,7 @@ The service is deployed on **Render** and can be accessed via the provided Rende
 
 3. Run the service:
     ```bash
-   ./your-repo-name
+   ./assignment-1
 
 ---
 
@@ -123,7 +123,7 @@ Response:
    curl http://localhost:8080/countryinfo/v1/population/no?limit=2000-2002
 
 Response:
-```(json)
+```json
    {
      "mean": 4514292,
      "values": [
@@ -163,16 +163,7 @@ Response:
 
 The service is deployed on **Render**. You can access it at the following URL:
 
-🔗 **[Render Service URL](https://your-render-service-url.onrender.com)**
+🔗 **[Render Service URL](https://assignment-1-uszz.onrender.com/)**
 
-
----
-
-## API Documentation
-
-For detailed API documentation, refer to the following:
-
-- **REST Countries API**: [https://documenter.getpostman.com/view/1134062/T1LJjU52](https://documenter.getpostman.com/view/1134062/T1LJjU52)
-- **CountriesNow API**: [http://129.241.150.113:8080/](http://129.241.150.113:8080/)
 
 ---
